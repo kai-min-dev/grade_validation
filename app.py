@@ -59,11 +59,18 @@ with st.sidebar:
 if 'index' not in st.session_state:
     st.session_state.index = 0
 
+# Initialize lists in session state to store decisions and fail reasons
 if 'decision' not in st.session_state:
-    st.session_state.decision = ["Pass"] * len(st.session_state.df) if 'df' in st.session_state else []
+    st.session_state.decision = []
 
 if 'fail_reason' not in st.session_state:
-    st.session_state.fail_reason = [None] * len(st.session_state.df) if 'df' in st.session_state else []
+    st.session_state.fail_reason = []
+
+# Ensure lists are the correct length
+if 'df' in st.session_state:
+    while len(st.session_state.decision) < len(st.session_state.df):
+        st.session_state.decision.append("Pass")
+        st.session_state.fail_reason.append(None)
 
 # Extract ZIP file and load images
 if zip_file:
@@ -79,6 +86,8 @@ if csv_file:
     if 'fail_reason' not in df.columns:
         df['fail_reason'] = None
     st.session_state.df = df
+
+    # Ensure lists in session state match the dataframe
     st.session_state.decision = df['result'].tolist()
     st.session_state.fail_reason = df['fail_reason'].tolist()
 
@@ -148,16 +157,10 @@ if 'df' in st.session_state and 'img_folder' in st.session_state:
     if col1.button("Previous Image", key="prev_image"):
         if index > 0:
             st.session_state.index -= 1
-        else:
-            st.warning("You are at the first image.")
     
     if col3.button("Next Image", key="next_image"):
         if index < len(df) - 1:
             st.session_state.index += 1
-            st.session_state.decision[st.session_state.index] = "Pass"  # Set default to "Pass" for new images
-            st.experimental_rerun()
-        else:
-            st.warning("You are at the last image.")
-    
+
     # Progress bar
     st.progress((index + 1) / len(df))
