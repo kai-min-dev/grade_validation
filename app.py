@@ -19,8 +19,7 @@ with st.sidebar:
     # Slider to control image width
     image_width = st.slider("Adjust Image Width", min_value=100, max_value=1000, value=500, key="image_width_slider")
     
-    # Placeholder for Predicted Label Column selectbox
-    pred_label_col = None
+    # Predicted Label Column selectbox with search functionality
     if 'df' in st.session_state:
         pred_label_col = st.selectbox(
             "Select Predicted Label Column:",
@@ -97,7 +96,8 @@ if 'df' in st.session_state and 'img_folder' in st.session_state:
         st.error("Image not found!")
     
     # Ensure Predicted Label Column is selected
-    if pred_label_col:
+    if 'pred_label_col_sidebar' in st.session_state:
+        pred_label_col = st.session_state.pred_label_col_sidebar
         pred_label = df.iloc[index][pred_label_col]
         if pred_label == 1:
             label_text = "A"
