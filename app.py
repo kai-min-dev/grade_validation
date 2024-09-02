@@ -15,7 +15,18 @@ with st.sidebar:
     st.header("Upload Files")
     zip_file = st.file_uploader("Upload ZIP File Containing Images", type=["zip"])
     csv_file = st.file_uploader("Upload CSV File", type=["csv"])
-    
+
+    # Slider to control image width
+    image_width = st.slider("Adjust Image Width", min_value=100, max_value=1000, value=500)
+
+    # Button to save progress
+    if st.button("Save Progress"):
+        if 'df' in st.session_state:
+            csv_download = st.session_state.df.to_csv(index=False)
+            st.download_button(label="Download Progress CSV", data=csv_download, file_name="progress.csv", mime="text/csv")
+        else:
+            st.warning("No data to save. Please upload a CSV file and start reviewing.")
+
 # Initialize session state
 if 'index' not in st.session_state:
     st.session_state.index = 0
@@ -29,8 +40,10 @@ if zip_file:
 # Load CSV file
 if csv_file:
     df = pd.read_csv(csv_file)
-    df['result'] = "Pass"
-    df['fail_reason'] = None
+    if 'result' not in df.columns:
+        df['result'] = "Pass"
+    if 'fail_reason' not in df.columns:
+        df['fail_reason'] = None
     st.session_state.df = df
 
 # Display the current image
@@ -50,13 +63,23 @@ if 'df' in st.session_state and 'img_folder' in st.session_state:
             break
     
     if image_path:
-        st.image(image_path, use_column_width=True)
+        st.image(image_path, width=image_width)
     else:
         st.error("Image not found!")
     
-    # Display the predicted label
+    # Display the predicted label with A, B, C conversion
     pred_label_col = st.selectbox("Select Predicted Label Column:", df.columns, key="pred_label_col")
-    st.write(f"Predicted Label: {df.iloc[index][pred_label_col]}")
+    pred_label = df.iloc[index][pred_label_col]
+    if pred_label == 1:
+        label_text = "A"
+    elif pred_label == 2:
+        label_text = "B"
+    elif pred_label == 3:
+        label_text = "C"
+    else:
+        label_text = str(pred_label)
+    
+    st.write(f"Predicted Label: {label_text}")
 
     # Choose result
     decision = st.radio("Choose Result:", ("Pass", "Fail"), index=0 if df.iloc[index]['result'] == "Pass" else 1, key="decision")
@@ -82,12 +105,12 @@ if 'df' in st.session_state and 'img_folder' in st.session_state:
     # Progress bar
     st.progress((index + 1) / len(df))
     
+    # Button to save progress
+    if st.button("Save Progress"):
+        csv_download = df.to_csv(index=False)
+        st.download_button(label="Download Progress CSV", data=csv_download, file_name="progress.csv", mime="text/csv")
+
     # Download updated CSV
-    if st.button("Download CSV File"):
+    if st.button("Download Final CSV File"):
         csv_download = df.to_csv(index=False)
         st.download_button(label="Download CSV", data=csv_download, file_name="updated_csv_file.csv", mime="text/csv")
-
-# To run this app locally:
-# 1. Save this code in a file named `app.py`.
-# 2. Install Streamlit with `pip install streamlit`.
-# 3. Run the app using `streamlit run app.py`.
