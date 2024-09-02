@@ -59,6 +59,12 @@ with st.sidebar:
 if 'index' not in st.session_state:
     st.session_state.index = 0
 
+if 'decision' not in st.session_state:
+    st.session_state.decision = ["Pass"] * len(st.session_state.df) if 'df' in st.session_state else []
+
+if 'fail_reason' not in st.session_state:
+    st.session_state.fail_reason = [None] * len(st.session_state.df) if 'df' in st.session_state else []
+
 # Extract ZIP file and load images
 if zip_file:
     with zipfile.ZipFile(zip_file, 'r') as zip_ref:
@@ -73,6 +79,8 @@ if csv_file:
     if 'fail_reason' not in df.columns:
         df['fail_reason'] = None
     st.session_state.df = df
+    st.session_state.decision = df['result'].tolist()
+    st.session_state.fail_reason = df['fail_reason'].tolist()
 
 # Display the current image
 if 'df' in st.session_state and 'img_folder' in st.session_state:
@@ -113,26 +121,26 @@ if 'df' in st.session_state and 'img_folder' in st.session_state:
         st.warning("Please select the Predicted Label Column from the sidebar.")
         label_text = "N/A"
     
-    # Choose result
+    # Choose result with saved or default value
     decision = st.radio(
         "Choose Result:",
         ("Pass", "Fail"),
-        index=0 if df.iloc[index]['result'] == "Pass" else 1,
-        key="decision"
+        index=0 if st.session_state.decision[index] == "Pass" else 1,
+        key="decision_radio"
     )
     
-    # If "Fail", provide a reason
+    # If "Fail", provide a reason with saved or default value
     fail_reason = None
     if decision == "Fail":
         fail_reason = st.text_input(
             "Enter Reason for Fail:",
-            value=df.iloc[index]['fail_reason'],
-            key="fail_reason"
+            value=st.session_state.fail_reason[index] if st.session_state.fail_reason[index] is not None else "",
+            key="fail_reason_input"
         )
     
-    # Update the DataFrame with the user's input
-    df.at[index, 'result'] = decision
-    df.at[index, 'fail_reason'] = fail_reason
+    # Save user selection in session state
+    st.session_state.decision[index] = decision
+    st.session_state.fail_reason[index] = fail_reason
     
     # Navigation buttons
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -146,6 +154,8 @@ if 'df' in st.session_state and 'img_folder' in st.session_state:
     if col3.button("Next Image", key="next_image"):
         if index < len(df) - 1:
             st.session_state.index += 1
+            st.session_state.decision[st.session_state.index] = "Pass"  # Set default to "Pass" for new images
+            st.experimental_rerun()
         else:
             st.warning("You are at the last image.")
     
