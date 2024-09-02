@@ -17,13 +17,13 @@ with st.sidebar:
     csv_file = st.file_uploader("Upload CSV File", type=["csv"])
 
     # Slider to control image width
-    image_width = st.slider("Adjust Image Width", min_value=100, max_value=1000, value=500)
+    image_width = st.slider("Adjust Image Width", min_value=100, max_value=1000, value=500, key="image_width_slider")
 
     # Button to save progress
-    if st.button("Save Progress"):
+    if st.button("Save Progress", key="save_progress_sidebar"):
         if 'df' in st.session_state:
             csv_download = st.session_state.df.to_csv(index=False)
-            st.download_button(label="Download Progress CSV", data=csv_download, file_name="progress.csv", mime="text/csv")
+            st.download_button(label="Download Progress CSV", data=csv_download, file_name="progress.csv", mime="text/csv", key="download_progress_sidebar")
         else:
             st.warning("No data to save. Please upload a CSV file and start reviewing.")
 
@@ -87,7 +87,7 @@ if 'df' in st.session_state and 'img_folder' in st.session_state:
     # If "Fail", provide a reason
     fail_reason = None
     if decision == "Fail":
-        fail_reason = st.text_input("Enter Reason for Fail:", value=df.iloc[index]['fail_reason'])
+        fail_reason = st.text_input("Enter Reason for Fail:", value=df.iloc[index]['fail_reason'], key="fail_reason")
     
     # Update the DataFrame with the user's input
     df.at[index, 'result'] = decision
@@ -96,21 +96,21 @@ if 'df' in st.session_state and 'img_folder' in st.session_state:
     # Navigation buttons
     col1, col2, col3 = st.columns([1, 2, 1])
     
-    if col1.button("Previous Image") and index > 0:
+    if col1.button("Previous Image", key="prev_image") and index > 0:
         st.session_state.index -= 1
     
-    if col3.button("Next Image") and index < len(df) - 1:
+    if col3.button("Next Image", key="next_image") and index < len(df) - 1:
         st.session_state.index += 1
     
     # Progress bar
     st.progress((index + 1) / len(df))
     
     # Button to save progress
-    if st.button("Save Progress"):
+    if st.button("Save Progress", key="save_progress_main"):
         csv_download = df.to_csv(index=False)
-        st.download_button(label="Download Progress CSV", data=csv_download, file_name="progress.csv", mime="text/csv")
+        st.download_button(label="Download Progress CSV", data=csv_download, file_name="progress.csv", mime="text/csv", key="download_progress_main")
 
     # Download updated CSV
-    if st.button("Download Final CSV File"):
+    if st.button("Download Final CSV File", key="download_final"):
         csv_download = df.to_csv(index=False)
-        st.download_button(label="Download CSV", data=csv_download, file_name="updated_csv_file.csv", mime="text/csv")
+        st.download_button(label="Download CSV", data=csv_download, file_name="updated_csv_file.csv", mime="text/csv", key="download_final_button")
