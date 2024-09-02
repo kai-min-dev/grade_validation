@@ -10,22 +10,51 @@ st.set_page_config(page_title="Image Review and Selection", layout="wide")
 # Define the UI layout
 st.title("Image Review and Selection")
 
-# Sidebar for file uploads
+# Sidebar for file uploads and settings
 with st.sidebar:
     st.header("Upload Files")
     zip_file = st.file_uploader("Upload ZIP File Containing Images", type=["zip"])
     csv_file = st.file_uploader("Upload CSV File", type=["csv"])
-
+    
     # Slider to control image width
     image_width = st.slider("Adjust Image Width", min_value=100, max_value=1000, value=500, key="image_width_slider")
-
+    
+    # Placeholder for Predicted Label Column selectbox
+    pred_label_col = None
+    if 'df' in st.session_state:
+        pred_label_col = st.selectbox(
+            "Select Predicted Label Column:",
+            options=st.session_state.df.columns,
+            key="pred_label_col_sidebar"
+        )
+    
     # Button to save progress
     if st.button("Save Progress", key="save_progress_sidebar"):
         if 'df' in st.session_state:
             csv_download = st.session_state.df.to_csv(index=False)
-            st.download_button(label="Download Progress CSV", data=csv_download, file_name="progress.csv", mime="text/csv", key="download_progress_sidebar")
+            st.download_button(
+                label="Download Progress CSV",
+                data=csv_download,
+                file_name="progress.csv",
+                mime="text/csv",
+                key="download_progress_sidebar"
+            )
         else:
             st.warning("No data to save. Please upload a CSV file and start reviewing.")
+    
+    # Download updated CSV
+    if st.button("Download Final CSV File", key="download_final_sidebar"):
+        if 'df' in st.session_state:
+            csv_download = st.session_state.df.to_csv(index=False)
+            st.download_button(
+                label="Download CSV",
+                data=csv_download,
+                file_name="updated_csv_file.csv",
+                mime="text/csv",
+                key="download_final_button_sidebar"
+            )
+        else:
+            st.warning("No data to download. Please upload a CSV file and start reviewing.")
 
 # Initialize session state
 if 'index' not in st.session_state:
@@ -67,27 +96,39 @@ if 'df' in st.session_state and 'img_folder' in st.session_state:
     else:
         st.error("Image not found!")
     
-    # Display the predicted label with A, B, C conversion
-    pred_label_col = st.selectbox("Select Predicted Label Column:", df.columns, key="pred_label_col")
-    pred_label = df.iloc[index][pred_label_col]
-    if pred_label == 1:
-        label_text = "A"
-    elif pred_label == 2:
-        label_text = "B"
-    elif pred_label == 3:
-        label_text = "C"
+    # Ensure Predicted Label Column is selected
+    if pred_label_col:
+        pred_label = df.iloc[index][pred_label_col]
+        if pred_label == 1:
+            label_text = "A"
+        elif pred_label == 2:
+            label_text = "B"
+        elif pred_label == 3:
+            label_text = "C"
+        else:
+            label_text = str(pred_label)
+        
+        st.write(f"Predicted Label: {label_text}")
     else:
-        label_text = str(pred_label)
+        st.warning("Please select the Predicted Label Column from the sidebar.")
+        label_text = "N/A"
     
-    st.write(f"Predicted Label: {label_text}")
-
     # Choose result
-    decision = st.radio("Choose Result:", ("Pass", "Fail"), index=0 if df.iloc[index]['result'] == "Pass" else 1, key="decision")
+    decision = st.radio(
+        "Choose Result:",
+        ("Pass", "Fail"),
+        index=0 if df.iloc[index]['result'] == "Pass" else 1,
+        key="decision"
+    )
     
     # If "Fail", provide a reason
     fail_reason = None
     if decision == "Fail":
-        fail_reason = st.text_input("Enter Reason for Fail:", value=df.iloc[index]['fail_reason'], key="fail_reason")
+        fail_reason = st.text_input(
+            "Enter Reason for Fail:",
+            value=df.iloc[index]['fail_reason'],
+            key="fail_reason"
+        )
     
     # Update the DataFrame with the user's input
     df.at[index, 'result'] = decision
@@ -96,21 +137,17 @@ if 'df' in st.session_state and 'img_folder' in st.session_state:
     # Navigation buttons
     col1, col2, col3 = st.columns([1, 2, 1])
     
-    if col1.button("Previous Image", key="prev_image") and index > 0:
-        st.session_state.index -= 1
+    if col1.button("Previous Image", key="prev_image"):
+        if index > 0:
+            st.session_state.index -= 1
+        else:
+            st.warning("You are at the first image.")
     
-    if col3.button("Next Image", key="next_image") and index < len(df) - 1:
-        st.session_state.index += 1
+    if col3.button("Next Image", key="next_image"):
+        if index < len(df) - 1:
+            st.session_state.index += 1
+        else:
+            st.warning("You are at the last image.")
     
     # Progress bar
     st.progress((index + 1) / len(df))
-    
-    # Button to save progress
-    if st.button("Save Progress", key="save_progress_main"):
-        csv_download = df.to_csv(index=False)
-        st.download_button(label="Download Progress CSV", data=csv_download, file_name="progress.csv", mime="text/csv", key="download_progress_main")
-
-    # Download updated CSV
-    if st.button("Download Final CSV File", key="download_final"):
-        csv_download = df.to_csv(index=False)
-        st.download_button(label="Download CSV", data=csv_download, file_name="updated_csv_file.csv", mime="text/csv", key="download_final_button")
