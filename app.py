@@ -17,7 +17,7 @@ with st.sidebar:
     csv_file = st.file_uploader("Upload CSV File", type=["csv"])
     
     # Slider to control image width
-    image_width = st.slider("Adjust Image Width", min_value=100, max_value=1000, value=500, key="image_width_slider")
+    image_width = st.slider("Adjust Image size", min_value=100, max_value=1000, value=500, key="image_size_slider")
     
     # Predicted Label Column selectbox with search functionality
     if 'df' in st.session_state:
@@ -99,6 +99,9 @@ if 'df' in st.session_state and 'img_folder' in st.session_state:
     # Display the sequence name
     st.subheader(f"Sequence: {df.iloc[index]['Sequence']}")
     
+    # Display current progress (e.g., "Image 5 of 20")
+    st.text(f"Image {index + 1} of {len(df)}")
+
     # Find and display the image
     sequence_name = df.iloc[index]['Sequence']
     image_path = None
@@ -164,3 +167,4 @@ if 'df' in st.session_state and 'img_folder' in st.session_state:
 
     # Progress bar
     st.progress((index + 1) / len(df))
+
