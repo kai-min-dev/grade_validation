@@ -1,32 +1,14 @@
 import streamlit as st
 import pandas as pd
 import os
-from PIL import Image
-from zipfile import ZipFile
+import zipfile
+from pathlib import Path
 
 # Set up Streamlit configuration
 st.set_page_config(page_title="Image Review and Selection", layout="wide")
 
 # Define the UI layout
 st.title("Image Review and Selection")
-
-# Caching functions to improve performance
-@st.cache_data
-def load_data(file_path):
-    return pd.read_csv(file_path)
-
-@st.cache_data
-def load_image(image_path, image_width):
-    image = Image.open(image_path)
-    # Resize image based on the specified width
-    resized_image = image.resize((int(image.width * image_width / 1000), int(image.height * image_width / 1000)))
-    return resized_image
-
-@st.cache_data
-def extract_image(zip_file_path, image_name):
-    with ZipFile(zip_file_path, 'r') as zip_ref:
-        image_data = zip_ref.read(image_name)
-    return Image.open(io.BytesIO(image_data))
 
 # Sidebar for file uploads and settings
 with st.sidebar:
@@ -92,13 +74,13 @@ if 'df' in st.session_state:
 
 # Extract ZIP file and load images
 if zip_file:
-    with ZipFile(zip_file, 'r') as zip_ref:
-        image_files = zip_ref.namelist()
-        st.session_state.img_folder = zip_file.name
+    with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+        zip_ref.extractall("extracted_images")
+    st.session_state.img_folder = "extracted_images"
 
 # Load CSV file
 if csv_file:
-    df = load_data(csv_file)
+    df = pd.read_csv(csv_file)
     if 'result' not in df.columns:
         df['result'] = "Pass"
     if 'fail_reason' not in df.columns:
@@ -123,16 +105,13 @@ if 'df' in st.session_state and 'img_folder' in st.session_state:
     # Find and display the image
     sequence_name = df.iloc[index]['Sequence']
     image_path = None
-    
-    # Look for the image in the extracted files
-    for file_name in image_files:
-        if sequence_name in file_name:
-            image_path = os.path.join(st.session_state.img_folder, file_name)
+    for root, dirs, files in os.walk(st.session_state.img_folder):
+        if sequence_name in files:
+            image_path = os.path.join(root, sequence_name)
             break
     
     if image_path:
-        image = load_image(image_path, image_width)
-        st.image(image)
+        st.image(image_path, width=image_width)
     else:
         st.error("Image not found!")
     
@@ -189,3 +168,7 @@ if 'df' in st.session_state and 'img_folder' in st.session_state:
     # Progress bar
     st.progress((index + 1) / len(df))
 
+# To run this app locally:
+# 1. Save this code in a file named `app.py`.
+# 2. Install Streamlit with `pip install streamlit`.
+# 3. Run the app using `streamlit run app.py`.
