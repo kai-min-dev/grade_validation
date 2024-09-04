@@ -16,9 +16,10 @@ def load_data(file_path):
     return pd.read_csv(file_path)
 
 @st.cache_data
-def load_image(image_path, width=400):
+def load_image(image_path, image_width):
     image = Image.open(image_path)
-    resized_image = image.resize((width, int(image.height * width / image.width)))
+    # Resize image based on the specified width
+    resized_image = image.resize((int(image.width * image_width / 1000), int(image.height * image_width / 1000)))
     return resized_image
 
 @st.cache_data
@@ -32,6 +33,9 @@ with st.sidebar:
     st.header("Upload Files")
     zip_file = st.file_uploader("Upload ZIP File Containing Images", type=["zip"])
     csv_file = st.file_uploader("Upload CSV File", type=["csv"])
+    
+    # Slider to control image width
+    image_width = st.slider("Adjust Image Width", min_value=100, max_value=1000, value=500, key="image_width_slider")
     
     # Predicted Label Column selectbox with search functionality
     if 'df' in st.session_state:
@@ -127,7 +131,7 @@ if 'df' in st.session_state and 'img_folder' in st.session_state:
             break
     
     if image_path:
-        image = load_image(image_path)
+        image = load_image(image_path, image_width)
         st.image(image)
     else:
         st.error("Image not found!")
@@ -184,3 +188,4 @@ if 'df' in st.session_state and 'img_folder' in st.session_state:
 
     # Progress bar
     st.progress((index + 1) / len(df))
+
